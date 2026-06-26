@@ -10,7 +10,8 @@ healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
-# Start command: set up volume symlinks for persistent data, then start TREK.
+# Start command wrapped in /bin/sh -c so Railway exec form supports shell syntax.
 # $RAILWAY_VOLUME_MOUNT_PATH is auto-set by Railway when a volume is attached.
 # On first boot, copies seed data from image to volume; on restart, skips (already there).
-startCommand = "VOL=${RAILWAY_VOLUME_MOUNT_PATH:-/app/persistent} && mkdir -p $VOL/data/logs $VOL/uploads && cp -rn /app/data/. $VOL/data/ 2>/dev/null; cp -rn /app/uploads/. $VOL/uploads/ 2>/dev/null; rm -rf /app/data /app/uploads && ln -sfn $VOL/data /app/data && ln -sfn $VOL/uploads /app/uploads && rm -f /app/data/*.db-wal /app/data/*.db-shm /app/data/*.db-journal && chown -R node:node $VOL 2>/dev/null; cd /app/server && exec gosu node node --require tsconfig-paths/register dist/index.js"
+# Cleans stale SQLite lock files before starting.
+startCommand = '/bin/sh -c "VOL=${RAILWAY_VOLUME_MOUNT_PATH:-/app/persistent} && mkdir -p $VOL/data/logs $VOL/uploads && cp -rn /app/data/. $VOL/data/ 2>/dev/null; cp -rn /app/uploads/. $VOL/uploads/ 2>/dev/null; rm -rf /app/data /app/uploads && ln -sfn $VOL/data /app/data && ln -sfn $VOL/uploads /app/uploads && rm -f $VOL/data/*.db-wal $VOL/data/*.db-shm $VOL/data/*.db-journal && chown -R node:node $VOL 2>/dev/null; cd /app/server && exec gosu node node --require tsconfig-paths/register dist/index.js"'
